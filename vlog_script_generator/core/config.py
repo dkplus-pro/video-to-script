@@ -26,15 +26,22 @@ DEFAULT_CONFIG = {
     },
     "audio": {"sampleRate": 16000, "asrProvider": "none", "whisperModel": "small"},
     "llm": {
-        "provider": "openai-compatible",
-        "baseURL": "",
-        "apiKey": "",
-        "textModel": "",
-        "visionModel": "",
         "temperature": 0.7,
         "maxTokens": 8000,
         "timeoutSeconds": 120,
         "enabled": False,
+        "text": {
+            "provider": "openai-compatible",
+            "baseURL": "",
+            "apiKey": "",
+            "model": "",
+        },
+        "vision": {
+            "provider": "openai-compatible",
+            "baseURL": "",
+            "apiKey": "",
+            "model": "",
+        },
     },
     "pipeline": {"retryTimes": 2, "resume": True},
 }
@@ -72,6 +79,29 @@ def read_yaml(path: Path) -> dict[str, Any]:
     return data
 
 
+def _migrate_llm_config(llm: dict[str, Any]) -> None:
+    flat_keys = {"baseURL", "apiKey", "textModel", "visionModel", "provider"}
+    if not flat_keys.intersection(llm):
+        return
+    text = llm.setdefault("text", {})
+    vision = llm.setdefault("vision", {})
+    if "provider" in llm:
+        text.setdefault("provider", llm["provider"])
+        vision.setdefault("provider", llm["provider"])
+    if "baseURL" in llm:
+        text.setdefault("baseURL", llm["baseURL"])
+        vision.setdefault("baseURL", llm["baseURL"])
+    if "apiKey" in llm:
+        text.setdefault("apiKey", llm["apiKey"])
+        vision.setdefault("apiKey", llm["apiKey"])
+    if llm.get("textModel"):
+        text.setdefault("model", llm["textModel"])
+    if llm.get("visionModel"):
+        vision.setdefault("model", llm["visionModel"])
+    for key in flat_keys:
+        llm.pop(key, None)
+
+
 def load_config(config_path: str | None = None) -> dict[str, Any]:
     project_default = Path("config/default.yaml")
     config = _merge(DEFAULT_CONFIG, read_yaml(project_default) if project_default.exists() else {})
@@ -79,6 +109,15 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
         config = _merge(config, read_yaml(Path(config_path)))
     config = _expand_env(config)
     llm = config.setdefault("llm", {})
-    llm["enabled"] = bool(llm.get("enabled") and llm.get("baseURL") and llm.get("apiKey"))
+    _migrate_llm_config(llm)
+    text = llm.get("text", {})
+    vision = llm.get("vision", {})
+    llm["enabled"] = bool(
+        llm.get("enabled")
+        and (
+            (text.get("baseURL") and text.get("apiKey"))
+            or (vision.get("baseURL") and vision.get("apiKey"))
+        )
+    )
     return config
 

@@ -20,15 +20,22 @@ audio:
   whisperModel: "small"
 
 llm:
-  provider: "openai-compatible"
-  baseURL: ""
-  apiKey: ""
-  textModel: ""
-  visionModel: ""
   temperature: 0.7
   maxTokens: 8000
   timeoutSeconds: 120
   enabled: false
+
+  text:
+    provider: "openai-compatible"
+    baseURL: ""
+    apiKey: ""
+    model: ""
+
+  vision:
+    provider: "openai-compatible"
+    baseURL: ""
+    apiKey: ""
+    model: ""
 
 pipeline:
   retryTimes: 2

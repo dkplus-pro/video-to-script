@@ -8,24 +8,26 @@ from typing import Any
 
 
 class OpenAICompatibleClient:
-    def __init__(self, config: dict) -> None:
-        self.config = config.get("llm", config)
-        self.base_url = str(self.config.get("baseURL", "")).rstrip("/")
-        self.api_key = str(self.config.get("apiKey", ""))
-        self.timeout = int(self.config.get("timeoutSeconds", 120))
+    def __init__(self, config: dict, shared: dict | None = None) -> None:
+        self.base_url = str(config.get("baseURL", "")).rstrip("/")
+        self.api_key = str(config.get("apiKey", ""))
+        shared = shared or {}
+        self.timeout = int(config.get("timeoutSeconds", shared.get("timeoutSeconds", 120)))
+        self.temperature = float(config.get("temperature", shared.get("temperature", 0.7)))
+        self.max_tokens = int(config.get("maxTokens", shared.get("maxTokens", 8000)))
 
     @property
     def enabled(self) -> bool:
-        return bool(self.config.get("enabled") and self.base_url and self.api_key)
+        return bool(self.base_url and self.api_key)
 
     def chat(self, messages: list[dict[str, Any]], model: str | None = None) -> str:
         if not self.enabled:
             raise RuntimeError("LLM is not enabled.")
         payload = {
-            "model": model or self.config.get("textModel"),
+            "model": model or "",
             "messages": messages,
-            "temperature": float(self.config.get("temperature", 0.7)),
-            "max_tokens": int(self.config.get("maxTokens", 8000)),
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
         }
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions",

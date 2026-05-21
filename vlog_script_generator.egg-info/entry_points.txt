@@ -1,0 +1,2 @@
+[console_scripts]
+vlog-script-generator = vlog_script_generator.cli.app:main

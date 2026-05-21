@@ -8,6 +8,11 @@ from vlog_script_generator.models import Filmstrip, MaterialAnalysis
 from vlog_script_generator.storage.cache import write_json
 
 
+def _vision_config(config: dict) -> dict:
+    llm = config.get("llm", {})
+    return {**llm, **llm.get("vision", {})}
+
+
 def analyze_filmstrip(
     filmstrip: Filmstrip,
     output_root: str | Path,
@@ -22,8 +27,9 @@ def analyze_filmstrip(
         data = json.loads(out_path.read_text(encoding="utf-8"))
         return MaterialAnalysis(**data)
 
-    client = OpenAICompatibleClient(config)
-    if client.enabled and config.get("llm", {}).get("visionModel"):
+    cfg = _vision_config(config)
+    client = OpenAICompatibleClient(cfg, shared=config.get("llm", {}))
+    if client.enabled and cfg.get("model"):
         analysis = _analyze_with_llm(client, filmstrip, prompts)
     else:
         analysis = _heuristic_analysis(filmstrip)
@@ -36,7 +42,7 @@ def _analyze_with_llm(client: OpenAICompatibleClient, filmstrip: Filmstrip, prom
         {"type": "text", "text": prompts.get("vision_analyze_filmstrip", "")},
         {"type": "image_url", "image_url": {"url": client.image_to_data_url(filmstrip.path)}},
     ]
-    text = client.chat([{"role": "user", "content": content}], model=client.config.get("visionModel"))
+    text = client.chat([{"role": "user", "content": content}], model=client.model)
     try:
         data = json.loads(_strip_code_fence(text))
     except Exception:
