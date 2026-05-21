@@ -1,0 +1,36 @@
+app:
+  outputDirName: ".output"
+
+video:
+  extensions: ["mp4", "mov", "mkv", "avi", "m4v"]
+  maxWorkers: 2
+
+frames:
+  minFrames: 6
+  maxFrames: 24
+  framesPerFilmstrip: 9
+  jpegQuality: 88
+  blackThreshold: 12
+  blurThreshold: 45
+  duplicateHashDistance: 4
+
+audio:
+  sampleRate: 16000
+  asrProvider: "none"
+  whisperModel: "small"
+
+llm:
+  provider: "openai-compatible"
+  baseURL: ""
+  apiKey: ""
+  textModel: ""
+  visionModel: ""
+  temperature: 0.7
+  maxTokens: 8000
+  timeoutSeconds: 120
+  enabled: false
+
+pipeline:
+  retryTimes: 2
+  resume: true
+
